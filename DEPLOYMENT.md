@@ -82,7 +82,7 @@ Shortlist runs as **one Node.js app**: the server answers `/api/*` and also serv
 
 ## Troubleshooting
 
-- **Build fails with "tsc", "vite" or "prisma: not found".** The build needs dev dependencies. Make sure the install step is not set to production-only.
+- **Build fails with "tsc", "vite" or "prisma: not found".** The build needs dev dependencies. The `.npmrc` file in the project (`include=dev`) makes npm install them even when `NODE_ENV=production`; make sure it is committed.
 - **Build fails at "db:deploy".** `DATABASE_URL` is wrong or the database cannot be reached during the build. Check the host, the `%23` encoding and Remote MySQL access.
 - **The site loads but sign-in fails.** `APP_URL`, `API_URL` and `CORS_ORIGIN` must all be exactly `https://your-domain.com`, with no trailing slash.
 - **The server stops at start-up.** Read the runtime log. It names the variable in `server/.env` that is missing or invalid.
