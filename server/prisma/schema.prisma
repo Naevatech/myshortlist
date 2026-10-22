@@ -1,0 +1,323 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum ApplyRoute {
+  email
+  form
+  site
+}
+
+enum WorkMode {
+  remote
+  hybrid
+  onsite
+}
+
+enum MatchStatus {
+  new
+  viewed
+  skipped
+  saved
+  applied
+  expired
+}
+
+enum DocumentType {
+  cv
+  cover_letter
+}
+
+enum AnswerSource {
+  cv
+  profile
+  ai
+  user
+}
+
+enum ApplicationStatus {
+  approved
+  applied
+  viewed
+  interview
+  offer
+  rejected
+  withdrawn
+}
+
+model User {
+  id                    String    @id @default(cuid())
+  email                 String    @unique @db.VarChar(320)
+  name                  String?   @db.VarChar(200)
+  googleId              String?   @unique @db.VarChar(64)
+  /// null for Google-only accounts
+  passwordHash          String?   @db.VarChar(255)
+  passwordChangedAt     DateTime?
+  failedSignins         Int       @default(0)
+  lastFailedSigninAt    DateTime?
+  lockedUntil           DateTime?
+  emailVerifiedAt       DateTime?
+  onboardingCompletedAt DateTime?
+  matchesPerDay         Int       @default(5)
+  notifyNewMatches      Boolean   @default(true)
+  notifyAppUpdates      Boolean   @default(true)
+  deletedAt             DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  refreshTokens RefreshToken[]
+  resetTokens   PasswordResetToken[]
+  cvs           Cv[]
+  profile       Profile?
+  preferences   Preferences?
+  matches       Match[]
+  applications  Application[]
+  auditLogs     AuditLog[]
+
+  @@index([deletedAt])
+  @@index([onboardingCompletedAt])
+}
+
+model OtpCode {
+  id         String    @id @default(cuid())
+  email      String    @db.VarChar(320)
+  codeHash   String    @db.VarChar(128)
+  expiresAt  DateTime
+  attempts   Int       @default(0)
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([email, createdAt])
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique @db.VarChar(128)
+  expiresAt DateTime
+  revokedAt DateTime?
+  userAgent String?   @db.VarChar(400)
+  ip        String?   @db.VarChar(64)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique @db.VarChar(128)
+  expiresAt DateTime
+  usedAt    DateTime?
+  ip        String?   @db.VarChar(64)
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Cv {
+  id         String   @id @default(cuid())
+  userId     String
+  fileKey    String   @db.VarChar(400)
+  fileName   String   @db.VarChar(255)
+  mime       String   @db.VarChar(120)
+  size       Int
+  rawText    String   @db.LongText
+  parsedJson Json
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isActive])
+}
+
+model Profile {
+  userId         String   @id
+  fullName       String   @default("") @db.VarChar(200)
+  email          String   @default("") @db.VarChar(320)
+  phone          String?  @db.VarChar(40)
+  location       String   @default("") @db.VarChar(200)
+  headline       String   @default("") @db.VarChar(200)
+  summary        String   @default("") @db.Text
+  experienceJson Json
+  educationJson  Json
+  skillsJson     Json
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Preferences {
+  userId           String   @id
+  rolesJson        Json
+  location         String   @default("") @db.VarChar(200)
+  radiusMiles      Int      @default(15)
+  workStylesJson   Json
+  minSalary        Int?
+  rightToWorkUk    Boolean  @default(true)
+  needsSponsorship Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Job {
+  id               String     @id @default(cuid())
+  provider         String     @db.VarChar(40)
+  externalId       String     @db.VarChar(191)
+  title            String     @db.VarChar(200)
+  company          String     @db.VarChar(200)
+  location         String     @db.VarChar(200)
+  workMode         WorkMode
+  workModeDetail   String?    @db.VarChar(200)
+  salaryMin        Int?
+  salaryMax        Int?
+  description      String     @db.Text
+  requirementsJson Json
+  applyRoute       ApplyRoute
+  applyUrl         String?    @db.VarChar(1000)
+  applyEmail       String?    @db.VarChar(320)
+  formSchemaJson   Json?
+  postedAt         DateTime
+  rawJson          Json?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  matches      Match[]
+  applications Application[]
+
+  @@unique([provider, externalId])
+  @@index([postedAt])
+}
+
+model Match {
+  id          String      @id @default(cuid())
+  userId      String
+  jobId       String
+  score       Int
+  reasonsJson Json
+  reasonLine  String      @db.VarChar(400)
+  status      MatchStatus @default(new)
+  matchedOn   DateTime    @db.Date
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  job          Job           @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  documents    Document[]
+  answers      FormAnswer[]
+  applications Application[]
+
+  @@unique([userId, jobId])
+  @@index([userId, matchedOn])
+  @@index([jobId])
+}
+
+model Document {
+  id            String       @id @default(cuid())
+  matchId       String
+  type          DocumentType
+  blocksJson    Json
+  editedByUser  Boolean      @default(false)
+  version       Int          @default(1)
+  promptVersion String       @default("template-1") @db.VarChar(40)
+  pdfKey        String?      @db.VarChar(400)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  match Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  @@unique([matchId, type])
+  @@index([matchId])
+}
+
+model FormAnswer {
+  id             String       @id @default(cuid())
+  matchId        String
+  key            String       @db.VarChar(80)
+  label          String       @db.VarChar(400)
+  value          String       @default("") @db.Text
+  source         AnswerSource
+  needsAttention Boolean      @default(false)
+  position       Int          @default(0)
+  multiline      Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  match Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  @@unique([matchId, key])
+  @@index([matchId])
+}
+
+model Application {
+  id              String            @id @default(cuid())
+  userId          String
+  matchId         String?
+  jobId           String
+  route           ApplyRoute
+  status          ApplicationStatus @default(approved)
+  approvedAt      DateTime
+  scheduledSendAt DateTime?
+  sentAt          DateTime?
+  undoneAt        DateTime?
+  sendError       String?           @db.VarChar(400)
+  notes           String            @default("") @db.Text
+  idempotencyKey  String            @unique @db.VarChar(191)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  user   User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  match  Match?             @relation(fields: [matchId], references: [id], onDelete: SetNull)
+  job    Job                @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  events ApplicationEvent[]
+
+  @@index([userId, status])
+  @@index([matchId])
+  @@index([jobId])
+  @@index([status, scheduledSendAt])
+}
+
+model ApplicationEvent {
+  id            String   @id @default(cuid())
+  applicationId String
+  type          String   @db.VarChar(60)
+  label         String   @db.VarChar(400)
+  detail        String?  @db.VarChar(1000)
+  occurredAt    DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId, occurredAt])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String   @db.VarChar(80)
+  metaJson  Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([action])
+}

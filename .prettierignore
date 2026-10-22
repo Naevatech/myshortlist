@@ -1,0 +1,4 @@
+dist
+node_modules
+BUILD_PROMPT.md
+server/prisma/migrations
