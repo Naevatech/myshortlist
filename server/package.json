@@ -32,7 +32,7 @@
     "helmet": "^8.0.0",
     "jsonwebtoken": "^9.0.2",
     "mammoth": "^1.8.0",
-    "multer": "^2.0.0",
+    "multer": "^2.5.0",
     "node-cron": "^3.0.3",
     "openai": "^4.77.0",
     "pdf-parse": "1.1.1",
@@ -40,7 +40,8 @@
     "pino": "^9.6.0",
     "pino-http": "^10.3.0",
     "resend": "^4.0.1",
-    "zod": "^3.24.1"
+    "uuid": "^11.1.1",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/archiver": "^6.0.3",
