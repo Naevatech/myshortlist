@@ -214,6 +214,8 @@ model Match {
   reasonLine  String      @db.VarChar(400)
   status      MatchStatus @default(new)
   matchedOn   DateTime    @db.Date
+  /// Set when the person opened the employer's application page, before they confirm they applied.
+  startedAt   DateTime?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 

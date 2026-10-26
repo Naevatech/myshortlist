@@ -50,6 +50,14 @@ export async function searchRecentJobs(provider: JobProvider, q: Omit<JobSearch,
   return withinWindow(raws, now, w);
 }
 
+/** Matches whose job was posted before this are removed (unless applied to or started). */
+export const retentionCutoff = (now = new Date()) => new Date(now.getTime() - env.JOB_RETENTION_DAYS * DAY_MS);
+
+/** Whole days until a job posted at `postedAt` is removed (0 = today). */
+export function daysUntilRemoved(postedAt: Date, now = new Date()): number {
+  return Math.max(0, Math.floor((postedAt.getTime() + env.JOB_RETENTION_DAYS * DAY_MS - now.getTime()) / DAY_MS));
+}
+
 /** Jobs posted on or before this date have aged out of the window. */
 export const agedOutBefore = (now = new Date()) => new Date(now.getTime() - (env.JOBS_MAX_AGE_DAYS + 1) * DAY_MS);
 

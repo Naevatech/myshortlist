@@ -1,5 +1,5 @@
 import { env } from '../config/env.js';
-import { agedOutBefore, jobProvider, searchRecentJobs, upsertJobs } from '../services/jobs/index.js';
+import { jobProvider, retentionCutoff, searchRecentJobs, upsertJobs } from '../services/jobs/index.js';
 import { scoreMatch } from '../services/matching.js';
 import { generateForMatch } from '../services/documents.js';
 import { loadCandidate } from '../services/profileData.js';
@@ -71,7 +71,7 @@ export async function generateMatchesForUser(userId: string, opts: { notify?: bo
 
 /** The morning run for every onboarded user. Also purges accounts deleted more than seven days ago. */
 export async function runDailyMatches(now = new Date()) {
-  const expired = await expireAgedOutMatches(now);
+  const removed = await purgeOldMatches(now);
   const users = await prisma.user.findMany({
     where: { onboardingCompletedAt: { not: null }, deletedAt: null },
     select: { id: true },
@@ -85,16 +85,26 @@ export async function runDailyMatches(now = new Date()) {
     }
   }
   const purged = await purgeDeletedUsers(now);
-  logger.info({ users: users.length, matches: total, expired, purged, provider: env.JOB_PROVIDER }, 'daily matches done');
-  return { users: users.length, matches: total, expired, purged };
+  logger.info({ users: users.length, matches: total, removed, purged, provider: env.JOB_PROVIDER }, 'daily matches done');
+  return { users: users.length, matches: total, removed, purged };
 }
 
-/** Matches whose job is older than the posting window leave Today. Applied ones are kept as they are. */
-export async function expireAgedOutMatches(now = new Date()) {
-  const res = await prisma.match.updateMany({
-    where: { status: { in: ['new', 'viewed', 'saved'] }, job: { postedAt: { lte: agedOutBefore(now) } } },
-    data: { status: 'expired' },
+/**
+ * Removes matches whose job was posted more than JOB_RETENTION_DAYS ago. Matches the person applied to or started
+ * are kept, and so is any job with an application, so Applications keeps its copy of the job.
+ */
+export async function purgeOldMatches(now = new Date()) {
+  const cutoff = retentionCutoff(now);
+  const res = await prisma.match.deleteMany({
+    where: {
+      job: { postedAt: { lt: cutoff } },
+      status: { not: 'applied' },
+      startedAt: null,
+      applications: { none: { undoneAt: null } },
+    },
   });
+  // Jobs nobody is matched to or applied to any more.
+  await prisma.job.deleteMany({ where: { postedAt: { lt: cutoff }, matches: { none: {} }, applications: { none: {} } } });
   return res.count;
 }
 

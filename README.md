@@ -75,6 +75,7 @@ Other scripts: `npm run build`, `npm test` (server and client), `npm run lint`.
 | `DEFAULT_MATCHES_PER_DAY` | yes | 3, 5, 10, 15, 20, 25 or 30 |
 | `MAX_MATCHES_PER_DAY` | yes | Highest option offered in Settings, default 30 |
 | `JOBS_MAX_AGE_DAYS`, `JOBS_MIN_AGE_DAYS` | yes | Only jobs posted within this window are fetched and shown, newest first. Defaults 14 and 0; set the minimum to 1 to hide jobs posted today |
+| `JOB_RETENTION_DAYS` | no | Default 21. Matches stay under Today › Earlier until their job is this old, then the morning run removes them. Jobs you applied to or started are kept |
 | `UNDO_WINDOW_SECONDS` | yes | Seconds between approval and sending, default 10 |
 | `BROWSERBASE_*`, `STRIPE_*`, `SENTRY_DSN` | no | Reserved for later; unused in version 1 |
 

@@ -80,7 +80,7 @@ const STEPS = [
   {
     title: 'Review your matches',
     big: 'Wake up to your best matches.',
-    text: 'Each morning, the best new UK jobs from the last two weeks, each with a score and a reason.',
+    text: 'Each morning, the best new UK jobs from the last two weeks, each with a score and a reason. Missed one? It is saved under Earlier.',
   },
   {
     title: 'Approve, and we apply',
@@ -101,6 +101,10 @@ const FAQ = [
   [
     'Which jobs will I see?',
     'UK jobs that match your CV and preferences, posted within the last two weeks. You choose how many matches you see each day, from 3 to 30.',
+  ],
+  [
+    'Can I go back to jobs from earlier days?',
+    'Yes. Every match is saved under the day we found it, with a tag showing whether you applied, started or skipped it. Jobs are removed automatically 3 weeks after they were posted, so the list stays fresh. Anything you applied to stays in Applications.',
   ],
   ['Can I edit the CV and cover letter?', 'Yes. You can edit both before you approve. Anything we changed for the role is underlined.'],
   [
@@ -433,6 +437,13 @@ export default function Landing() {
               <li className="badge">
                 <Download />
                 Download or delete your data
+              </li>
+              <li className="badge">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <rect x="3.5" y="5" width="17" height="15" rx="2" />
+                  <path d="M3.5 10h17M8 3v4M16 3v4" />
+                </svg>
+                Every match saved for 3 weeks
               </li>
             </ul>
           </section>

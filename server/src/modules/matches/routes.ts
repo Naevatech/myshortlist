@@ -4,7 +4,8 @@ import { z } from 'zod';
 import { prisma } from '../../utils/prisma.js';
 import { asArray } from '../../utils/json.js';
 import { ukToday } from '../../utils/dates.js';
-import { agedOutBefore } from '../../services/jobs/index.js';
+import { agedOutBefore, daysUntilRemoved } from '../../services/jobs/index.js';
+import { env } from '../../config/env.js';
 import { conflict } from '../../utils/errors.js';
 import { currentUser, requireAuth } from '../../middleware/auth.js';
 import { validateBody } from '../../middleware/validate.js';
@@ -38,6 +39,76 @@ matchesRouter.get('/today', async (req, res) => {
     prisma.match.count({ where: { userId: user.id, matchedOn: today, status: { in: ['skipped', 'applied', 'saved'] } } }),
   ]);
   res.json({ total: items.length, reviewed, items: items.map(matchListView) });
+});
+
+export type EarlierStatus = 'not' | 'applied' | 'started' | 'skipped';
+
+/** How a past match stands: applied, started on the employer's site (not confirmed), skipped, or not applied. */
+export function earlierStatus(
+  m: { status: string; startedAt: Date | null },
+  app: { status: string } | undefined,
+): EarlierStatus {
+  if (m.status === 'applied' || (app && app.status !== 'approved')) return 'applied';
+  if (m.startedAt || app) return 'started';
+  if (m.status === 'skipped') return 'skipped';
+  return 'not';
+}
+
+const DAY_MS = 86_400_000;
+/** Shown only for matches that will be removed, in their last few days. */
+const WARN_DAYS = 3;
+
+/**
+ * Earlier: every match from before today, within the retention period, grouped by the day it was found (newest
+ * first), each with its status. Counts cover all of them, for the filter chips.
+ */
+matchesRouter.get('/earlier', async (req, res) => {
+  const user = currentUser(req);
+  const today = ukToday();
+  const since = new Date(today.getTime() - env.JOB_RETENTION_DAYS * DAY_MS);
+  const matches = await prisma.match.findMany({
+    where: { userId: user.id, matchedOn: { lt: today, gte: since }, status: { not: 'expired' } },
+    include: {
+      job: { select: { title: true, company: true, location: true, workMode: true, postedAt: true } },
+      applications: { where: { undoneAt: null }, select: { id: true, status: true }, orderBy: { approvedAt: 'desc' }, take: 1 },
+    },
+    orderBy: [{ matchedOn: 'desc' }, { score: 'desc' }],
+  });
+
+  const now = new Date();
+  const counts = { all: 0, not: 0, applied: 0, started: 0, skipped: 0 };
+  const days = new Map<string, unknown[]>();
+  for (const m of matches) {
+    const app = m.applications[0];
+    const status = earlierStatus(m, app);
+    const left = daysUntilRemoved(m.job.postedAt, now);
+    counts.all++;
+    counts[status]++;
+    const day = m.matchedOn.toISOString().slice(0, 10);
+    if (!days.has(day)) days.set(day, []);
+    days.get(day)!.push({
+      id: m.id,
+      score: m.score,
+      status,
+      applicationId: status === 'applied' && app ? app.id : null,
+      expiresInDays: (status === 'not' || status === 'skipped') && left <= WARN_DAYS ? left : null,
+      job: { ...m.job, postedAt: m.job.postedAt.toISOString() },
+    });
+  }
+  res.json({
+    retentionDays: env.JOB_RETENTION_DAYS,
+    counts,
+    days: [...days.entries()].map(([date, items]) => ({ date, items })),
+  });
+});
+
+/** The person opened the employer's application page: the match counts as Started until they confirm. */
+matchesRouter.post('/:id/start', async (req, res) => {
+  const match = await ownedMatch(currentUser(req).id, String(req.params.id));
+  if (!match.startedAt && match.status !== 'applied') {
+    await prisma.match.update({ where: { id: match.id }, data: { startedAt: new Date() } });
+  }
+  res.json({ ok: true });
 });
 
 matchesRouter.get('/:id', async (req, res) => {

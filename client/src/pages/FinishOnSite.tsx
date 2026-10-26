@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, apiUrl } from '../lib/api';
@@ -14,6 +15,17 @@ export default function FinishOnSite() {
   const queryClient = useQueryClient();
   const { data: match, isPending, isError, refetch } = useMatch(matchId);
   useTitle(match ? `Finish on the ${match.job.company} site` : 'Finish on their site');
+
+  // Opening this page means the person has started applying on the employer's site: Earlier shows it as Started.
+  const started = useRef(false);
+  useEffect(() => {
+    if (!match || started.current || match.status === 'applied') return;
+    started.current = true;
+    api
+      .post(`/matches/${matchId}/start`)
+      .then(() => queryClient.invalidateQueries({ queryKey: ['matches', 'earlier'] }))
+      .catch(() => undefined);
+  }, [match, matchId, queryClient]);
 
   const applied = useMutation({
     mutationFn: () => api.post(`/matches/${matchId}/applied-on-site`),

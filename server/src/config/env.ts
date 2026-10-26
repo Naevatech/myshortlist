@@ -86,6 +86,8 @@ const schema = z.object({
   // Only fetch and show jobs posted within this window, in days.
   JOBS_MAX_AGE_DAYS: int(14).pipe(z.number().min(1).max(30)),
   JOBS_MIN_AGE_DAYS: int(0).pipe(z.number().min(0).max(30)),
+  // Matches stay under Earlier until their job is this many days old, then are removed (not applied or started ones).
+  JOB_RETENTION_DAYS: int(21).pipe(z.number().min(1).max(90)),
   UNDO_WINDOW_SECONDS: int(10).pipe(z.number().min(1).max(600)),
 
   // Production hosting: serve client/dist from this server (on in production) and run the schedulers in this
@@ -113,6 +115,7 @@ function load() {
 
   const rangeErrors: string[] = [];
   if (env.JOBS_MIN_AGE_DAYS > env.JOBS_MAX_AGE_DAYS) rangeErrors.push('JOBS_MIN_AGE_DAYS must not be more than JOBS_MAX_AGE_DAYS');
+  if (env.JOB_RETENTION_DAYS < env.JOBS_MAX_AGE_DAYS) rangeErrors.push('JOB_RETENTION_DAYS must not be less than JOBS_MAX_AGE_DAYS');
   if (env.DEFAULT_MATCHES_PER_DAY > env.MAX_MATCHES_PER_DAY) rangeErrors.push('DEFAULT_MATCHES_PER_DAY must not be more than MAX_MATCHES_PER_DAY');
   if (rangeErrors.length) {
     const list = rangeErrors.map((e) => `  - ${e}`).join('\n');

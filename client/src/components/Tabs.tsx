@@ -3,7 +3,7 @@ import { useRef, type KeyboardEvent, type ReactNode } from 'react';
 interface Props<T extends string> {
   label: string;
   idPrefix: string;
-  tabs: Array<{ id: T; label: string }>;
+  tabs: Array<{ id: T; label: ReactNode }>;
   value: T;
   onChange: (id: T) => void;
   /** Content to the right of the tab row (for example Edit). */

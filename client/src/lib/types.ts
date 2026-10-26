@@ -207,3 +207,23 @@ export interface Settings {
   matchesPerDay: number;
   matchesPerDayOptions: number[];
 }
+
+export type EarlierStatus = 'not' | 'applied' | 'started' | 'skipped';
+
+export interface EarlierItem {
+  id: string;
+  score: number;
+  status: EarlierStatus;
+  /** Set for applied matches: the row opens the application. */
+  applicationId: string | null;
+  /** Days until the match is removed, only in its last few days (and never for applied or started ones). */
+  expiresInDays: number | null;
+  job: Pick<JobSummary, 'title' | 'company' | 'location' | 'workMode' | 'postedAt'>;
+}
+
+export interface EarlierMatches {
+  retentionDays: number;
+  counts: Record<'all' | EarlierStatus, number>;
+  /** Newest day first. `date` is the UK calendar day the matches were found (YYYY-MM-DD). */
+  days: Array<{ date: string; items: EarlierItem[] }>;
+}
