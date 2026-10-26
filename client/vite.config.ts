@@ -1,5 +1,5 @@
-/// <reference types="vitest" />
-import { defineConfig } from 'vite';
+// Vitest's defineConfig is Vite's, plus the `test` settings below.
+import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
@@ -41,6 +41,5 @@ export default defineConfig({
     testTimeout: 20_000,
     // Each jsdom worker uses a lot of memory; two keep the suite reliable on smaller machines.
     maxWorkers: 2,
-    minWorkers: 1,
   },
 });
