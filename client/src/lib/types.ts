@@ -227,3 +227,47 @@ export interface EarlierMatches {
   /** Newest day first. `date` is the UK calendar day the matches were found (YYYY-MM-DD). */
   days: Array<{ date: string; items: EarlierItem[] }>;
 }
+
+// ---- Tools › ATS checker
+
+export interface AtsSetup {
+  cv: { fileName: string; updatedAt: string } | null;
+  maxCvSizeMb: number;
+  jobs: Array<{ matchId: string; title: string; company: string; score: number; foundDaysAgo: number }>;
+}
+
+export type AtsArea = 'kw' | 'sec' | 'fmt' | 'read' | 'basic';
+
+export interface AtsCheckItem {
+  id: string;
+  area: AtsArea;
+  sev: 'pass' | 'warn' | 'fail';
+  title: string;
+  detail: string;
+  /** copy: fixed in Shortlist's copy of the CV. keywords: use the keyword tool. null: advice only. */
+  fix: 'copy' | 'keywords' | null;
+  fixLabel: string | null;
+  points: number;
+  fixed: boolean;
+  ignored: boolean;
+  resolved: boolean;
+}
+
+export interface AtsResult {
+  id: string;
+  createdAt: string;
+  cvFileName: string;
+  job: { title: string; company: string; matchId: string | null } | null;
+  jobSource: 'match' | 'paste' | 'none';
+  score: number;
+  initialScore: number;
+  verdict: string;
+  remaining: number;
+  potential: number;
+  areas: Array<{ id: AtsArea; label: string; score: number; left: number }>;
+  checks: AtsCheckItem[];
+  keywords: Array<{ k: string; job: number; cv: number; added: boolean }>;
+  fields: Array<{ label: string; value: string; ok: boolean; fixed?: boolean }>;
+  text: Array<{ text: string; mark?: 'bad' | 'good' }>;
+  copy: 'match' | 'download';
+}

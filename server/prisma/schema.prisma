@@ -72,6 +72,7 @@ model User {
 
   refreshTokens RefreshToken[]
   resetTokens   PasswordResetToken[]
+  atsChecks     AtsCheck[]
   cvs           Cv[]
   profile       Profile?
   preferences   Preferences?
@@ -224,6 +225,7 @@ model Match {
   documents    Document[]
   answers      FormAnswer[]
   applications Application[]
+  atsChecks    AtsCheck[]
 
   @@unique([userId, jobId])
   @@index([userId, matchedOn])
@@ -322,4 +324,34 @@ model AuditLog {
 
   @@index([userId])
   @@index([action])
+}
+
+/// Tools > ATS checker. The CV text is kept so the check can be reopened and re-run; the uploaded file is not stored.
+model AtsCheck {
+  id           String   @id @default(cuid())
+  userId       String
+  /// The job, when picked from the person's matches. Fixes then go into that match's tailored CV.
+  matchId      String?
+  cvSource     String   @db.VarChar(20)
+  cvFileName   String   @db.VarChar(255)
+  cvText       String   @db.LongText
+  /// The details the fixed copy is built from (profile, or the uploaded CV's parse).
+  profileJson  Json
+  jobSource    String   @db.VarChar(20)
+  jobTitle     String?  @db.VarChar(200)
+  company      String?  @db.VarChar(200)
+  jobText      String?  @db.Text
+  initialScore Int
+  /// { fixed: string[], ignored: string[], added: string[] }
+  stateJson    Json
+  /// The fixed copy's blocks, when there is no match to hold them.
+  copyJson     Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  match Match? @relation(fields: [matchId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([matchId])
 }

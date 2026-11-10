@@ -21,6 +21,7 @@ import { applicationsRouter } from './modules/applications/routes.js';
 import { settingsRouter } from './modules/settings/routes.js';
 import { cronRouter } from './modules/cron/routes.js';
 import { serveClient } from './web.js';
+import { atsRouter } from './modules/tools/ats.js';
 
 export function createApp() {
   const app = express();
@@ -79,6 +80,7 @@ export function createApp() {
   api.use('/documents', documentsRouter);
   api.use('/applications', applicationsRouter);
   api.use('/settings', settingsRouter);
+  api.use('/tools/ats', atsRouter);
   api.use('/cron', cronRouter);
 
   app.use('/api', api);

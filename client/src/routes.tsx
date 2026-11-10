@@ -23,6 +23,8 @@ const Applications = lazy(() => import('./pages/Applications'));
 const ApplicationDetail = lazy(() => import('./pages/ApplicationDetail'));
 const Profile = lazy(() => import('./pages/Profile'));
 const Settings = lazy(() => import('./pages/Settings'));
+const AtsSetup = lazy(() => import('./pages/tools/AtsSetup'));
+const AtsResults = lazy(() => import('./pages/tools/AtsResults'));
 
 export function AppRoutes() {
   return (
@@ -65,6 +67,9 @@ export function AppRoutes() {
           ['/profile', <Profile />],
           ['/profile/cv', <ReplaceCv />],
           ['/settings', <Settings />],
+          ['/tools', <Navigate to="/tools/ats" replace />],
+          ['/tools/ats', <AtsSetup />],
+          ['/tools/ats/:checkId', <AtsResults />],
         ] as const
       ).map(([path, el]) => (
         <Route key={path} path={path} element={<RequireAuth>{el}</RequireAuth>} />

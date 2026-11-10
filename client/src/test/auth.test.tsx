@@ -199,7 +199,7 @@ describe('accessibility', () => {
     await screen.findByText('Reason.');
     const nav = screen.getAllByRole('navigation', { name: 'Main' })[0];
     const icons = nav.querySelectorAll('svg');
-    expect(icons.length).toBe(6); // four links, dark mode and log out
+    expect(icons.length).toBe(8); // four links, Tools and its arrow, dark mode and log out
     icons.forEach((svg) => expect(svg).toHaveAttribute('aria-hidden', 'true'));
     await waitFor(() => expect(screen.getByText('94%').textContent).toBe('94% match score'));
   });

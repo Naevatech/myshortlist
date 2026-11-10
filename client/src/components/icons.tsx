@@ -45,6 +45,18 @@ export const SettingsIcon = () => (
   </svg>
 );
 
+export const ToolsIcon = () => (
+  <svg {...p}>
+    <path d="M14.5 6.5a4 4 0 0 0-5.3 5.3L4 17l3 3 5.2-5.2a4 4 0 0 0 5.3-5.3l-2.5 2.5-2.3-.7-.7-2.3z" />
+  </svg>
+);
+
+export const ChevronDownIcon = () => (
+  <svg {...p} className="ic chev">
+    <path d="M6 9l6 6 6-6" />
+  </svg>
+);
+
 export const MoonIcon = () => (
   <svg {...p}>
     <path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" />

@@ -1,5 +1,5 @@
 import { useLocation } from 'react-router-dom';
-import { ApplicationsIcon, ProfileIcon, SettingsIcon, TodayIcon } from './icons';
+import { ApplicationsIcon, ProfileIcon, SettingsIcon, TodayIcon, ToolsIcon } from './icons';
 
 export const NAV_ITEMS = [
   { to: '/today', label: 'Today', Icon: TodayIcon, prefixes: ['/today', '/jobs'] },
@@ -7,6 +7,10 @@ export const NAV_ITEMS = [
   { to: '/profile', label: 'Profile', Icon: ProfileIcon, prefixes: ['/profile'] },
   { to: '/settings', label: 'Settings', Icon: SettingsIcon, prefixes: ['/settings'] },
 ];
+
+/** Tools: a group in the sidebar, a single tab on mobile (it opens the first tool). */
+export const TOOLS = { label: 'Tools', Icon: ToolsIcon, prefixes: ['/tools'] };
+export const TOOL_ITEMS = [{ to: '/tools/ats', label: 'ATS checker', prefixes: ['/tools/ats'] }];
 
 /** Job review and its steps count as part of Today. */
 export function useActiveNav() {

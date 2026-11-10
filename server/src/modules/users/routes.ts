@@ -64,7 +64,7 @@ usersRouter.post(
 /** Everything we hold about the user, as one JSON file. */
 usersRouter.get('/export', async (req, res) => {
   const user = currentUser(req);
-  const [profile, preferences, cvs, matches, applications] = await Promise.all([
+  const [profile, preferences, cvs, matches, applications, atsChecks] = await Promise.all([
     prisma.profile.findUnique({ where: { userId: user.id } }),
     prisma.preferences.findUnique({ where: { userId: user.id } }),
     prisma.cv.findMany({ where: { userId: user.id }, select: { fileName: true, createdAt: true, rawText: true, parsedJson: true, isActive: true } }),
@@ -73,6 +73,7 @@ usersRouter.get('/export', async (req, res) => {
       include: { job: { select: { title: true, company: true, location: true } }, documents: true, answers: true },
     }),
     prisma.application.findMany({ where: { userId: user.id }, include: { events: true, job: { select: { title: true, company: true } } } }),
+    prisma.atsCheck.findMany({ where: { userId: user.id }, orderBy: { createdAt: 'desc' } }),
   ]);
   await audit(user.id, 'account.export');
   const data = {
@@ -110,6 +111,15 @@ usersRouter.get('/export', async (req, res) => {
       sentAt: a.sentAt,
       notes: a.notes,
       events: a.events.map((e) => ({ label: e.label, detail: e.detail, occurredAt: e.occurredAt })),
+    })),
+    atsChecks: atsChecks.map((c) => ({
+      createdAt: c.createdAt,
+      cvFileName: c.cvFileName,
+      cvText: c.cvText,
+      job: c.jobText ? { title: c.jobTitle, company: c.company, text: c.jobText } : null,
+      initialScore: c.initialScore,
+      changes: c.stateJson,
+      fixedCopy: c.copyJson,
     })),
   };
   res.setHeader('Content-Disposition', 'attachment; filename="shortlist-data.json"');

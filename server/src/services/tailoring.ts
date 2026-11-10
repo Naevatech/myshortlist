@@ -31,7 +31,8 @@ function relevance(text: string, job: Job): number {
 }
 
 function cvHeader(p: ProfileData): Block[] {
-  const meta = [p.headline, p.location, p.email].filter(Boolean).join(' · ');
+  // Contact details in the body text, not a page header, so application software can read them.
+  const meta = [p.headline, p.location, p.email, p.phone].filter(Boolean).join(' · ');
   return [
     { type: 'heading', segments: [seg(p.fullName || 'Your name')] },
     ...(meta ? [{ type: 'meta' as const, segments: [seg(meta)] }] : []),
@@ -55,6 +56,20 @@ function cvTail(p: ProfileData, skillsOrder: string[]): Block[] {
     blocks.push({ type: 'paragraph', segments: [seg(skillsOrder.join(', '))] });
   }
   return blocks;
+}
+
+/** A plain, single-column CV from the person's details, with standard headings. Used where there is no job. */
+export function plainCv(p: ProfileData): Block[] {
+  const blocks = cvHeader(p);
+  if (p.summary) blocks.push({ type: 'section', segments: [seg('Summary')] }, { type: 'paragraph', segments: [seg(sentence(p.summary))] });
+  if (p.experience.length) {
+    blocks.push({ type: 'section', segments: [seg('Experience')] });
+    for (const e of p.experience) {
+      blocks.push({ type: 'entry', segments: [seg([e.title, e.company].filter(Boolean).join(', '))], aside: dates(e.start, e.end) || undefined });
+      if (e.bullets.length) blocks.push({ type: 'bullets', items: e.bullets.map((b) => [seg(b)]) });
+    }
+  }
+  return [...blocks, ...cvTail(p, p.skills)];
 }
 
 /** Template CV: the user's own content, reordered for the job. Only the added summary sentence is new wording. */
